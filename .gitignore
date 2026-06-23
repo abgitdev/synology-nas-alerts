@@ -1,0 +1,43 @@
+# ── Secrets / environment ───────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Script runtime artifacts (contain real IPs/usernames — do NOT publish)
+state.json
+**/state.json
+*.json.tmp
+**/*.json.tmp
+run.log
+run.log.*
+**/run.log
+**/run.log.*
+.run.lock/
+**/.run.lock/
+.write-test
+**/.write-test
+.log-cleanup.stamp
+**/.log-cleanup.stamp
+
+# ── Python ──────────────────────────────────────────────────────────
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+
+# ── Source backups ──────────────────────────────────────────────────
+*.bak
+*.bak-*
+*.bak.*
+
+# ── macOS junk ──────────────────────────────────────────────────────
+.DS_Store
+**/.DS_Store
+
+# ── Claude Code: sessions, notes, audits — never publish ────────────
+.claude/
+CLAUDE.md
+memory/
+*audit*.md
+AUDIT*.md
+.audit*.json

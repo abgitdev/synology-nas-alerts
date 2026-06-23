@@ -1,0 +1,59 @@
+name: build
+
+# CI: compile all scripts + a guarded dry-run smoke test (no Telegram, no Synology deps required).
+
+on:
+  push:
+    branches: [ main ]
+    paths-ignore: [ '**.md', 'docs/**', 'LICENSE' ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        # Synology DSM ships Python 3.8; we also check a modern interpreter.
+        python-version: [ '3.8', '3.12' ]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Compile all scripts (syntax / import-time check)
+        run: |
+          python -m py_compile \
+            notify.py \
+            nas-health/digest.py \
+            security-alert/digest.py \
+            ups-alert/digest.py
+          echo "py_compile OK on Python ${{ matrix.python-version }}"
+
+      - name: Dry-run smoke test (no Telegram, no Synology binaries required)
+        run: |
+          # --dry-run prints to stdout and never contacts Telegram. On a generic
+          # CI runner the Synology tools (synowebapi/upsc/smbstatus) are absent, so
+          # a component may exit 1 BY DESIGN — that is fine. We only fail on a real
+          # Python crash (an uncaught traceback).
+          set +e
+          fail=0
+          for comp in nas-health security-alert ups-alert; do
+            echo "::group::$comp --dry-run"
+            out=$(python "$comp/digest.py" --dry-run 2>&1); rc=$?
+            echo "$out"
+            echo "exit=$rc"
+            echo "::endgroup::"
+            if printf '%s\n' "$out" | grep -q "Traceback (most recent call last)"; then
+              echo "::error::$comp crashed with a Python traceback"
+              fail=1
+            fi
+          done
+          exit $fail
